@@ -6,7 +6,6 @@ import { Heart, MessageCircle, Share, ArrowUp, ArrowDown, Bookmark, MapPin, Cloc
 import { motion } from 'framer-motion'
 import { usePosts } from '../contexts/PostContext'
 import Avatar from './Avatar'
-import CommentModal from './CommentModal'
 import { Card, Badge, Button } from './UI'
 
 interface FeedCardProps {
@@ -36,7 +35,6 @@ const throttle = (func: Function, delay: number) => {
 export default function FeedCardNew({ post }: FeedCardProps) {
   const navigate = useNavigate()
   const { toggleUpvote, toggleDownvote, toggleSave } = usePosts()
-  const [showCommentModal, setShowCommentModal] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
   const [imageError, setImageError] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -255,7 +253,7 @@ export default function FeedCardNew({ post }: FeedCardProps) {
 
             {/* Comments */}
             <motion.button
-              onClick={() => setShowCommentModal(true)}
+              onClick={() => navigate(`/post/${post.id}/comments`)}
               className="icon-btn"
               whileTap={{ scale: 0.9 }}
             >
@@ -287,15 +285,6 @@ export default function FeedCardNew({ post }: FeedCardProps) {
           </div>
         </div>
       </Card>
-
-      {/* Comment Modal */}
-      {showCommentModal && (
-        <CommentModal
-          post={post}
-          isOpen={showCommentModal}
-          onClose={() => setShowCommentModal(false)}
-        />
-      )}
     </motion.div>
   )
 }

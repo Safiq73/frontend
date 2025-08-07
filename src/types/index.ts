@@ -95,6 +95,7 @@ export interface Author {
   following_count: number
   bio?: string
   abbreviation?: string
+  follow_status?: boolean | null  // NEW: Follow status (null if user is author or not authenticated)
 }
 
 export interface CivicPost {

@@ -23,6 +23,7 @@ export interface PostFilters {
   category?: string
   sort_by?: string
   order?: 'asc' | 'desc'
+  include_follow_status?: boolean  // NEW: Include follow status for post authors
 }
 
 export interface CreatePostRequest {
@@ -101,9 +102,9 @@ export const postsService = {
   },
 
   async getPost(postId: string): Promise<CivicPost> {
-    const response = await apiClient.get<ApiResponse<{ post: any }>>(`/posts/${postId}`)
-    if (response.success && response.data?.post) {
-      return transformPost(response.data.post)
+    const response = await apiClient.get<ApiResponse<any>>(`/posts/${postId}`)
+    if (response.success && response.data) {
+      return transformPost(response.data)
     }
     throw new Error(response.error || 'Failed to fetch post')
   },
@@ -166,30 +167,30 @@ export const postsService = {
   },
 
   async upvotePost(postId: string): Promise<{ upvotes: number; downvotes: number; is_upvoted: boolean; is_downvoted: boolean }> {
-    const response = await apiClient.post<ApiResponse<any>>(`/posts/${postId}/upvote`)
+    const response = await apiClient.post<ApiResponse<any>>(`/posts/${postId}/vote?vote_type=up`)
     if (response.success && response.data) {
       // Map backend response to frontend format
       const data = response.data
       return {
         upvotes: data.upvotes,
         downvotes: data.downvotes,
-        is_upvoted: data.user_vote === 'upvote',
-        is_downvoted: data.user_vote === 'downvote'
+        is_upvoted: data.is_upvoted,
+        is_downvoted: data.is_downvoted
       }
     }
     throw new Error(response.error || 'Failed to upvote post')
   },
 
   async downvotePost(postId: string): Promise<{ upvotes: number; downvotes: number; is_upvoted: boolean; is_downvoted: boolean }> {
-    const response = await apiClient.post<ApiResponse<any>>(`/posts/${postId}/downvote`)
+    const response = await apiClient.post<ApiResponse<any>>(`/posts/${postId}/vote?vote_type=down`)
     if (response.success && response.data) {
       // Map backend response to frontend format
       const data = response.data
       return {
         upvotes: data.upvotes,
         downvotes: data.downvotes,
-        is_upvoted: data.user_vote === 'upvote',
-        is_downvoted: data.user_vote === 'downvote'
+        is_upvoted: data.is_upvoted,
+        is_downvoted: data.is_downvoted
       }
     }
     throw new Error(response.error || 'Failed to downvote post')

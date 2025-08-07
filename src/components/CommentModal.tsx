@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send } from 'lucide-react'
-import { CivicPost } from '../types'
+import { CivicPost, Comment } from '../types'
 import { useUser } from '../contexts/UserContext'
 import { usePosts } from '../contexts/PostContext'
+import { commentsService } from '../services/comments'
 import Avatar from './Avatar'
 
 interface CommentModalProps {
@@ -15,6 +16,8 @@ interface CommentModalProps {
 export default function CommentModal({ post, isOpen, onClose }: CommentModalProps) {
   const [commentText, setCommentText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [loadingComments, setLoadingComments] = useState(false)
   const { user } = useUser()
   const { addComment } = usePosts()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -27,6 +30,9 @@ export default function CommentModal({ post, isOpen, onClose }: CommentModalProp
       setTimeout(() => {
         textareaRef.current?.focus()
       }, 300)
+      
+      // Fetch comments when modal opens
+      loadComments()
     } else {
       document.body.style.overflow = 'unset'
     }
@@ -34,7 +40,21 @@ export default function CommentModal({ post, isOpen, onClose }: CommentModalProp
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen])
+  }, [isOpen, post.id])
+
+  const loadComments = async () => {
+    if (post.comment_count === 0) return
+    
+    setLoadingComments(true)
+    try {
+      const fetchedComments = await commentsService.getComments(post.id)
+      setComments(fetchedComments)
+    } catch (error) {
+      console.error('Failed to load comments:', error)
+    } finally {
+      setLoadingComments(false)
+    }
+  }
 
   // Close on Escape key
   useEffect(() => {
@@ -58,6 +78,8 @@ export default function CommentModal({ post, isOpen, onClose }: CommentModalProp
 
     try {
       await addComment(post.id, text, user as any)
+      // Refresh comments after adding new one
+      await loadComments()
     } catch (error) {
       setCommentText(text) // Restore text on error
       console.error('Failed to add comment:', error)
@@ -132,13 +154,42 @@ export default function CommentModal({ post, isOpen, onClose }: CommentModalProp
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No comments yet</h3>
                 <p className="text-gray-500 text-sm">Be the first to share your thoughts!</p>
               </div>
-            ) : (
+            ) : loadingComments ? (
               <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="text-2xl">💬</div>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{post.comment_count} Comments</h3>
-                <p className="text-gray-500 text-sm">Comments feature coming soon!</p>
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-500 text-sm">Loading comments...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex space-x-3">
+                    <Avatar
+                      src={comment.author.avatar_url}
+                      alt={comment.author.display_name || 'User'}
+                      size="sm"
+                    />
+                    <div className="flex-1">
+                      <div className="bg-gray-50 rounded-2xl px-4 py-3">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="font-medium text-sm text-gray-900">
+                            {comment.author.display_name || comment.author.username || 'User'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-800 text-sm leading-relaxed">
+                          {comment.content}
+                        </p>
+                      </div>
+                      {/* Vote buttons could be added here */}
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                        <span>{comment.upvotes} upvotes</span>
+                        <span>{comment.downvotes} downvotes</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 import { CivicPost, User } from '../types'
 import { postsService, PostFilters, CreatePostRequest } from '../services/posts'
+import { commentsService } from '../services/comments'
 
 interface PostContextType {
   posts: CivicPost[]
@@ -14,7 +15,7 @@ interface PostContextType {
   toggleDownvote: (postId: string) => Promise<void>
   toggleSave: (postId: string) => Promise<void>
   updateAssignee: (postId: string, assigneeId: string | null) => Promise<void>
-  addComment: (postId: string, content: string, user: User) => void
+  addComment: (postId: string, content: string, user: User) => Promise<void>
   loadPosts: (filters?: PostFilters, reset?: boolean) => Promise<void>
   loadMore: () => Promise<void>
   refreshPosts: () => Promise<void>
@@ -50,7 +51,8 @@ export function PostProvider({ children }: { children: ReactNode }) {
       const response = await postsService.getPosts({
         ...filtersToUse,
         page,
-        size: 20
+        size: 20,
+        include_follow_status: true  // NEW: Include follow status to avoid N+1 API calls
       })
       
       if (reset) {
@@ -196,14 +198,24 @@ export function PostProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addComment = (postId: string, _content: string, _user: User) => {
-    // TODO: Implement real API call to add comment
-    // For now, just increment comment count
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { ...post, comment_count: post.comment_count + 1 }
-        : post
-    ))
+  const addComment = async (postId: string, content: string, user: User) => {
+    try {
+      // Create comment via API
+      await commentsService.createComment({
+        content,
+        post_id: postId
+      })
+      
+      // Update post comment count
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { ...post, comment_count: post.comment_count + 1 }
+          : post
+      ))
+    } catch (err) {
+      console.error('Failed to add comment:', err)
+      throw err
+    }
   }
 
   return (

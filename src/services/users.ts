@@ -17,6 +17,13 @@ export interface UserPostsResponse {
   total: number
 }
 
+export interface UserStats {
+  posts_count: number
+  comments_received: number
+  upvotes_received: number
+  total_views: number
+}
+
 // Simple cache for user data
 let userCache: User | null = null
 let userCacheExpiry: number = 0
@@ -106,13 +113,19 @@ export const userService = {
     return user
   },
 
-  async getUserById(userId: string): Promise<User> {
-    const response = await apiClient.get<ApiResponse<User>>(`/users/${userId}`)
-    
+  async getUserProfile(id: string): Promise<User> {
+    const response = await apiClient.get<ApiResponse<User>>(`/users/${id}`)
     if (!response.success || !response.data) {
       throw new Error(response.message || 'Failed to get user profile')
     }
-    
+    return response.data
+  },
+
+  async getUserStats(id: string): Promise<UserStats> {
+    const response = await apiClient.get<ApiResponse<UserStats>>(`/users/${id}/stats`)
+    if (!response.success || !response.data) {
+      throw new Error(response.message || 'Failed to get user statistics')
+    }
     return response.data
   },
 

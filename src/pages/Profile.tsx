@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../contexts/UserContext'
 import { usePosts } from '../contexts/PostContext'
-import { userService } from '../services/users'
+import { userService, UserStats } from '../services/users'
 import { postsService } from '../services/posts'
 import { CivicPost, RepresentativeAccount } from '../types'
 import { Edit, Bookmark, MessageCircle, TrendingUp, Calendar, MapPin, Eye, Heart, Share2, Filter, Grid, List, MoreHorizontal, Camera, ChevronRight, LogIn, UserCheck } from 'lucide-react'
@@ -35,8 +35,42 @@ export default function Profile() {
   const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [avatarCacheBuster, setAvatarCacheBuster] = useState(0)
   const [freshUserData, setFreshUserData] = useState<any>(null)
+  const [userStats, setUserStats] = useState<UserStats | null>(null)
+  const [userStatsLoading, setUserStatsLoading] = useState(false)
   const avatarFileInputRef = useRef<HTMLInputElement>(null)
   const coverFileInputRef = useRef<HTMLInputElement>(null)
+
+  const loadUserStats = async () => {
+    if (!user) return
+    
+    try {
+      setUserStatsLoading(true)
+      const stats = await userService.getUserStats(user.id)
+      setUserStats(stats)
+    } catch (error) {
+      console.error('❌ Failed to load user statistics:', error)
+      // Fallback to calculating from userPosts if API fails
+      setUserStats({
+        posts_count: userPosts.length,
+        comments_received: userPosts.reduce((sum, post) => sum + post.comment_count, 0),
+        upvotes_received: userPosts.reduce((sum, post) => sum + post.upvotes, 0),
+        total_views: userPosts.length * 127 // Mock view count
+      })
+    } finally {
+      setUserStatsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUserPosts()
+    loadUserStats()
+  }, [user])
+
+  useEffect(() => {
+    if (userPosts.length > 0) {
+      loadUserStats() // Refresh stats when posts are loaded
+    }
+  }, [userPosts])
 
   // Load fresh user data including rep_accounts
   useEffect(() => {
@@ -188,9 +222,10 @@ export default function Profile() {
   console.log('🔍 Profile render - avatarCacheBuster:', avatarCacheBuster)
 
   const savedPosts = posts.filter(post => post.is_saved)
-  const totalUpvotes = userPosts.reduce((sum, post) => sum + post.upvotes, 0)
-  const totalComments = userPosts.reduce((sum, post) => sum + post.comment_count, 0)
-  const totalViews = userPosts.length * 127 // Mock view count
+  // Calculate statistics from API data or fallback to client-side calculation
+  const totalUpvotes = userStats?.upvotes_received ?? userPosts.reduce((sum, post) => sum + post.upvotes, 0)
+  const totalComments = userStats?.comments_received ?? userPosts.reduce((sum, post) => sum + post.comment_count, 0)
+  const totalViews = userStats?.total_views ?? (userPosts.length * 127) // Mock view count as fallback
   const joinDate = new Date(2024, 0, 15) // Mock join date
   
   const formatJoinDate = (date: Date) => {

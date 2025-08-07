@@ -403,7 +403,9 @@ class WebSocketSearchService extends SimpleEventEmitter {
    * Handle test broadcast
    */
   private handleTestBroadcast(message: any): void {
-    console.log('Test broadcast received:', message.data);
+    if (import.meta.env.DEV) {
+      console.log('Test broadcast received:', message.data);
+    }
     this.emit('testBroadcast', message.data);
   }
 

@@ -57,19 +57,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.log('🔍 AuthManager stored user avatar_url:', storedUser?.avatar_url)
           
           if (storedUser) {
-            console.log('✅ Found stored user:', storedUser.username)
+            if (import.meta.env.DEV) {
+              console.log('✅ Found stored user:', storedUser.username)
+            }
             setUser(storedUser)
             
             // Check if token needs refresh
             if (authManager.shouldRefreshToken()) {
-              console.log('🔄 Token needs refresh, attempting refresh...')
+              if (import.meta.env.DEV) {
+                console.log('🔄 Token needs refresh, attempting refresh...')
+              }
               
               // First check if refresh token is still valid
               if (!authManager.isRefreshTokenExpired()) {
                 const newToken = await authManager.refreshAccessToken()
-                if (newToken) {
+                if (newToken && import.meta.env.DEV) {
                   console.log('✅ Token refreshed successfully')
-                } else {
+                } else if (import.meta.env.DEV) {
                   console.log('❌ Token refresh failed, logging out')
                   await authManager.logout()
                   setUser(null)

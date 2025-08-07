@@ -254,7 +254,9 @@ class AdvancedAnalyticsService {
       params.append('message', message)
       await apiClient.post(`/ws/broadcast-test?${params.toString()}`)
     } catch (error) {
-      console.error('Test broadcast failed:', error)
+      if (import.meta.env.DEV) {
+        console.error('Test broadcast failed:', error)
+      }
       throw error
     }
   }

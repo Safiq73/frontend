@@ -6,7 +6,6 @@ import { MapPin, MessageCircle, ArrowUp, ArrowDown, Bookmark, Share, ChevronDown
 import { usePosts } from '../contexts/PostContext'
 import { useUser } from '../contexts/UserContext'
 import Avatar from './Avatar'
-import CommentModal from './CommentModal'
 import FollowButton from './FollowButton'
 import AssigneeSelection from './AssigneeSelection'
 
@@ -40,7 +39,6 @@ export default function FeedCard({ post, customStatusComponent, customDetailsSta
   const navigate = useNavigate()
   const { toggleUpvote, toggleDownvote, toggleSave, updateAssignee } = usePosts()
   const { user: currentUser } = useUser()
-  const [showCommentModal, setShowCommentModal] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
   const [imageError, setImageError] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -461,6 +459,7 @@ export default function FeedCard({ post, customStatusComponent, customDetailsSta
                 showIcon={false}
                 context="feed"
                 className="text-xs"
+                initialFollowStatus={post.author.follow_status}
               />
             )}
             
@@ -982,7 +981,7 @@ export default function FeedCard({ post, customStatusComponent, customDetailsSta
             </button>
             
             <button 
-              onClick={(post.source === 'news' || post.post_type === 'news') ? undefined : () => setShowCommentModal(true)}
+              onClick={(post.source === 'news' || post.post_type === 'news') ? undefined : () => navigate(`/post/${post.id}/comments`)}
               disabled={post.source === 'news' || post.post_type === 'news'}
               className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all transform hover:scale-105 active:scale-95 ${
                 (post.source === 'news' || post.post_type === 'news')
@@ -1023,7 +1022,7 @@ export default function FeedCard({ post, customStatusComponent, customDetailsSta
         {post.comment_count > 0 && !(post.source === 'news' || post.post_type === 'news') && (
           <div className="mt-4 pt-3 border-t border-gray-100">
             <button
-              onClick={() => setShowCommentModal(true)}
+              onClick={() => navigate(`/post/${post.id}/comments`)}
               className="w-full text-left hover:bg-gray-50 -mx-2 p-2 rounded-lg transition-colors group"
             >
               <div className="flex items-center justify-between">
@@ -1036,15 +1035,6 @@ export default function FeedCard({ post, customStatusComponent, customDetailsSta
           </div>
         )}
       </div>
-
-      {/* Comment Modal - only for regular posts */}
-      {!(post.source === 'news' || post.post_type === 'news') && (
-        <CommentModal
-          post={post}
-          isOpen={showCommentModal}
-          onClose={() => setShowCommentModal(false)}
-        />
-      )}
 
       {/* Assignee Selection Modal */}
       {showAssigneeModal && (

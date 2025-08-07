@@ -12,6 +12,7 @@ import SearchPage from './pages/SearchPage'
 import RepresentativePage from './pages/RepresentativePage'
 import WebSocketTestPage from './pages/WebSocketTestPage'
 import StatusDemo from './pages/StatusDemo'
+import CommentsPage from './pages/CommentsPage'
 import { PostProvider } from './contexts/PostContext'
 import { UserProvider } from './contexts/UserContext'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -46,17 +47,21 @@ function App() {
         })
         
         if (accessToken && authManager.isTokenExpired()) {
-          console.log('Access token is expired, attempting refresh...')
+          if (import.meta.env.DEV) {
+            console.log('Access token is expired, attempting refresh...')
+          }
           
           if (refreshToken && !authManager.isRefreshTokenExpired()) {
             const newToken = await authManager.refreshAccessToken()
-            if (newToken) {
+            if (newToken && import.meta.env.DEV) {
               console.log('Token refreshed successfully')
-            } else {
+            } else if (import.meta.env.DEV) {
               console.log('Token refresh failed')
             }
           } else {
-            console.log('Refresh token unavailable or expired, clearing auth')
+            if (import.meta.env.DEV) {
+              console.log('Refresh token unavailable or expired, clearing auth')
+            }
             await authManager.logout()
           }
         }
@@ -86,6 +91,7 @@ function App() {
                       <Route path="/" element={<Home />} />
                       <Route path="/post" element={<Post />} />
                       <Route path="/post/:postId" element={<Post />} />
+                      <Route path="/post/:postId/comments" element={<CommentsPage />} />
                       <Route path="/activity" element={<Activity />} />
                       <Route path="/explore" element={<Explore />} />
                       <Route path="/search" element={<SearchPage />} />

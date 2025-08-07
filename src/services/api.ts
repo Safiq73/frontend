@@ -154,7 +154,9 @@ class ApiClient {
           
           if (response.status >= 500 && attempt < maxRetries - 1) {
             lastError = new Error(`Server error: ${errorMessage}`)
-            console.warn(`Server error on attempt ${attempt + 1}, retrying in ${retryDelay * (attempt + 1)}ms...`)
+            if (import.meta.env.DEV) {
+              console.warn(`Server error on attempt ${attempt + 1}, retrying in ${retryDelay * (attempt + 1)}ms...`)
+            }
             await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
             continue // Retry on server errors
           }
@@ -193,13 +195,17 @@ class ApiClient {
         
         // Retry on network errors
         if (attempt < maxRetries - 1) {
-          console.log(`Request failed, retrying... (${attempt + 1}/${maxRetries})`)
+          if (import.meta.env.DEV) {
+            console.log(`Request failed, retrying... (${attempt + 1}/${maxRetries})`)
+          }
           await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
         }
       }
     }
     
-    console.error('API Request failed after retries:', lastError)
+    if (import.meta.env.DEV) {
+      console.error('API Request failed after retries:', lastError)
+    }
     throw lastError || new Error('Request failed after multiple attempts')
   }
 
@@ -208,7 +214,9 @@ class ApiClient {
     if (!refreshToken) return null
 
     try {
-      console.log('Attempting token refresh...')
+      if (import.meta.env.DEV) {
+        console.log('Attempting token refresh...')
+      }
       const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,19 +225,27 @@ class ApiClient {
 
       if (response.ok) {
         const data = await response.json()
-        console.log('Token refresh successful')
+        if (import.meta.env.DEV) {
+          console.log('Token refresh successful')
+        }
         this.setToken(data.access_token)
         localStorage.setItem('civic_refresh_token', data.refresh_token)
         return data.access_token
       } else {
-        console.log('Token refresh failed with status:', response.status)
+        if (import.meta.env.DEV) {
+          console.log('Token refresh failed with status:', response.status)
+        }
       }
     } catch (error) {
-      console.error('Token refresh failed:', error)
+      if (import.meta.env.DEV) {
+        console.error('Token refresh failed:', error)
+      }
     }
 
     // If refresh fails, clear tokens
-    console.log('Clearing tokens due to refresh failure')
+    if (import.meta.env.DEV) {
+      console.log('Clearing tokens due to refresh failure')
+    }
     this.setToken(null)
     localStorage.removeItem('civic_refresh_token')
     

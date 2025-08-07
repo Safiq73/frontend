@@ -13,14 +13,19 @@ export interface UpdateCommentRequest {
 
 export const commentsService = {
   async getComments(postId: string): Promise<Comment[]> {
-    const response = await apiClient.get<Comment[]>(`/posts/${postId}/comments`)
-    // Map backend response to frontend format
-    return response.map((comment: any) => ({
-      ...comment,
-      // Map user_vote enum to boolean fields for backward compatibility
-      is_upvoted: comment.user_vote === 'upvote',
-      is_downvoted: comment.user_vote === 'downvote'
-    }))
+    const response = await apiClient.get<ApiResponse<{ comments: any[]; total: number }>>(`/posts/${postId}/comments`)
+    
+    if (response.success && response.data?.comments) {
+      // Map backend response to frontend format
+      const mappedComments = response.data.comments.map((comment: any) => ({
+        ...comment,
+        // Map user_vote enum to boolean fields for backward compatibility
+        is_upvoted: comment.user_vote === 'upvote',
+        is_downvoted: comment.user_vote === 'downvote'
+      }))
+      return mappedComments
+    }
+    throw new Error(response.error || 'Failed to fetch comments')
   },
 
   async createComment(commentData: CreateCommentRequest): Promise<Comment> {
